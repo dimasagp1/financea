@@ -20,7 +20,8 @@ class BudgetApiController extends Controller
             'department_name' => 'nullable|string',
             'category_name'   => 'required|string',
             'month'           => 'required|date_format:Y-m',
-            'requested_amount' => 'required|numeric|min:0'
+            'requested_amount' => 'required|numeric|min:0',
+            'reference'       => 'nullable|string'
         ]);
 
         $year  = (int) date('Y', strtotime($validated['month']));
@@ -58,6 +59,16 @@ class BudgetApiController extends Controller
             ->where('name', $validated['category_name'])
             ->where('fiscal_year_id', $activeYear->id)
             ->first();
+
+        if (!$category) {
+            // Fallback: search globally within active fiscal year for sharing budget support
+            $category = BudgetCategory::where('name', $validated['category_name'])
+                ->where('fiscal_year_id', $activeYear->id)
+                ->first();
+            if ($category) {
+                $resolvedDeptId = $category->department_id;
+            }
+        }
 
         if (!$category) {
             return response()->json([
@@ -110,6 +121,17 @@ class BudgetApiController extends Controller
             ? 'Anggaran mencukupi.' 
             : 'Batasan anggaran terlampaui. Total pengajuan melebihi sisa anggaran kategori ' . $validated['category_name'] . ' bulan ini.';
 
+        // Cari data expense yang sudah ter-record untuk dicocokkan revisinya
+        $recordedExpenseAmount = null;
+        if (!empty($validated['reference'])) {
+            $expense = Expense::where('reference', $validated['reference'])
+                ->where('budget_category_id', $category->id)
+                ->first();
+            if ($expense) {
+                $recordedExpenseAmount = (float) $expense->amount;
+            }
+        }
+
         return response()->json([
             'status' => 'success',
             'is_allowed' => $isAllowed,
@@ -117,6 +139,7 @@ class BudgetApiController extends Controller
             'current_usage' => $currentUsage,
             'requested_amount' => $requestedAmount,
             'remaining_budget' => $remainingBudget,
+            'recorded_expense_amount' => $recordedExpenseAmount,
             'message' => $message
         ]);
     }
@@ -297,7 +320,12 @@ class BudgetApiController extends Controller
             }
         }
 
-        $categories = $query->pluck('name')->toArray();
+        $categories = $query->with('department')->get()->map(function($cat) {
+            return [
+                'name' => $cat->name,
+                'department_name' => $cat->department?->name
+            ];
+        })->toArray();
 
         return response()->json([
             'status' => 'success',
@@ -399,6 +427,15 @@ class BudgetApiController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Realisasi anggaran untuk referensi tersebut telah dihapus.'
+        ]);
+    }
+
+    public function departments()
+    {
+        $departments = Department::where('is_active', true)->get();
+        return response()->json([
+            'status' => 'success',
+            'data' => $departments
         ]);
     }
 }

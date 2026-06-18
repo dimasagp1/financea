@@ -161,63 +161,6 @@ class FinanceMonitoringSeeder extends Seeder
             }
         }
 
-        // Generate Random Expenses for Current Month and Previous Month
-        $currentMonth = (int) date('m');
-        $prevMonth = $currentMonth > 1 ? $currentMonth - 1 : 12;
-        $prevYear = $currentMonth > 1 ? $year : $year - 1;
-
-        $mlCounter = 10000;
-        foreach ($departmentModels as $deptCode => $dept) {
-            $cats = $categoryModels[$deptCode];
-            
-            // For each category, generate 1-3 random expenses for current month and prev month
-            foreach ($cats as $cat) {
-                // Prev Month
-                $numExpensesPrev = rand(1, 2);
-                for($i=0; $i<$numExpensesPrev; $i++) {
-                    $amount = rand(1000000, $cat->allocated_amount / 24); // Random amount relative to yearly budget
-                    $day = rand(1, 28);
-                    $dateStr = sprintf("%s-%02d-%02d", $prevYear, $prevMonth, $day);
-                    
-                    Expense::create([
-                        'odoo_move_line_id' => 'ML-' . $mlCounter++,
-                        'department_id' => $dept->id,
-                        'budget_category_id' => $cat->id,
-                        'qty' => rand(1, 5),
-                        'amount' => $amount,
-                        'date' => $dateStr,
-                        'description' => 'Realisasi ' . $cat->name . ' (Prev Month)',
-                        'reference' => 'INV/' . $prevYear . '/' . str_pad($mlCounter, 4, '0', STR_PAD_LEFT),
-                        'is_synced' => true,
-                        'synced_at' => now(),
-                        'odoo_data' => ['source' => 'seed'],
-                    ]);
-                }
-
-                // Current Month (a bit more aggressive to trigger warnings occasionally)
-                $numExpensesCurr = rand(1, 3);
-                for($i=0; $i<$numExpensesCurr; $i++) {
-                    $amount = rand(5000000, $cat->allocated_amount / 12); // Higher chance to hit budget limit
-                    $day = rand(1, 28);
-                    $dateStr = sprintf("%s-%02d-%02d", $year, $currentMonth, $day);
-                    
-                    Expense::create([
-                        'odoo_move_line_id' => 'ML-' . $mlCounter++,
-                        'department_id' => $dept->id,
-                        'budget_category_id' => $cat->id,
-                        'qty' => rand(1, 10),
-                        'amount' => $amount,
-                        'date' => $dateStr,
-                        'description' => 'Realisasi ' . $cat->name . ' (Current Month)',
-                        'reference' => 'INV/' . $year . '/' . str_pad($mlCounter, 4, '0', STR_PAD_LEFT),
-                        'is_synced' => true,
-                        'synced_at' => now(),
-                        'odoo_data' => ['source' => 'seed'],
-                    ]);
-                }
-            }
-        }
-
         // Ensure Superadmin exists
         User::updateOrCreate(
             ['email' => 'superadmin@finance.local'],

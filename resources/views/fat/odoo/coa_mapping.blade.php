@@ -232,7 +232,13 @@
                                                                         <button type="button" onclick="selectAllTx(this, false)" class="text-slate-500 hover:underline">Clear</button>
                                                                     </div>
                                                                 </div>
-                                                                <div class="max-h-48 overflow-y-auto space-y-1.5 mb-3 pr-1">
+                                                                <div class="mb-2">
+                                                                    <input type="text" 
+                                                                           placeholder="Cari transaksi..." 
+                                                                           class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-indigo-500 tx-search-filter"
+                                                                           oninput="filterTxItems(this)">
+                                                                </div>
+                                                                <div class="max-h-48 overflow-y-auto space-y-1.5 mb-3 pr-1 tx-items-list">
                                                                     @foreach($myMoveLines as $line)
                                                                         @php
                                                                             $lineIdStr = strval($line['id']);
@@ -690,7 +696,37 @@
                 
                 if (!isOpen) {
                     menu.classList.remove('hidden');
+                    
+                    // Reset search input and labels visibility
+                    const searchInput = menu.querySelector('.tx-search-filter');
+                    if (searchInput) {
+                        searchInput.value = '';
+                        searchInput.focus();
+                    }
+                    const list = menu.querySelector('.tx-items-list');
+                    if (list) {
+                        list.querySelectorAll('label').forEach(label => {
+                            label.classList.remove('hidden');
+                        });
+                    }
                 }
+            };
+
+            window.filterTxItems = function(input) {
+                const searchVal = input.value.toLowerCase().trim();
+                const menu = input.closest('.tx-dropdown-menu');
+                const list = menu.querySelector('.tx-items-list');
+                if (!list) return;
+                
+                const labels = list.querySelectorAll('label');
+                labels.forEach(label => {
+                    const text = label.textContent.toLowerCase();
+                    if (text.includes(searchVal)) {
+                        label.classList.remove('hidden');
+                    } else {
+                        label.classList.add('hidden');
+                    }
+                });
             };
 
             window.closeAllTxDropdowns = function() {

@@ -158,7 +158,6 @@ class OdooImportController extends Controller
             }
             
             $amount = (float) (($item['debit'] ?? 0) - ($item['credit'] ?? 0));
-            $amount = abs($amount);
             $groupedExpenses[$accountId]['total_amount'] += $amount;
             $groupedExpenses[$accountId]['items'][] = $item;
         }
@@ -260,7 +259,7 @@ class OdooImportController extends Controller
 
             if (!$accountId) continue;
 
-            $amount = abs((float) (($line['debit'] ?? 0) - ($line['credit'] ?? 0)));
+            $amount = (float) (($line['debit'] ?? 0) - ($line['credit'] ?? 0));
 
             if (!isset($coaStats[$accountId])) {
                 $coaStats[$accountId] = [

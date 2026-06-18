@@ -211,7 +211,7 @@
                                                                                 <span class="flex-1 leading-tight">
                                                                                     {{ $line['name'] ?: ($line['ref'] ?? 'Transaksi Odoo') }}
                                                                                     <strong class="block text-indigo-600 text-[10px] mt-0.5">
-                                                                                        Rp {{ number_format(abs(($line['debit'] ?? 0) - ($line['credit'] ?? 0)), 0, ',', '.') }}
+                                                                                        Rp {{ number_format(($line['debit'] ?? 0) - ($line['credit'] ?? 0), 0, ',', '.') }}
                                                                                         @if($isMappedToOther)
                                                                                              <span class="text-amber-600 ml-1">(Kategori Lain)</span>
                                                                                         @endif
@@ -263,7 +263,7 @@
                                                                 </span>
                                                                 <div class="flex items-center gap-1.5 shrink-0 ml-2">
                                                                     <span class="font-mono font-bold text-indigo-600 text-[10px]">
-                                                                        Rp {{ number_format(abs(($line['debit'] ?? 0) - ($line['credit'] ?? 0)), 0, ',', '.') }}
+                                                                        Rp {{ number_format(($line['debit'] ?? 0) - ($line['credit'] ?? 0), 0, ',', '.') }}
                                                                     </span>
                                                                     <button type="button"
                                                                             onclick="unassignTransaction('{{ $line['id'] }}')"
@@ -311,7 +311,7 @@
                                                             {{ $line['name'] ?: ($line['ref'] ?? 'Transaksi Odoo') }}
                                                         </span>
                                                         <span class="font-mono font-bold text-amber-700 ml-2 text-[10px] shrink-0">
-                                                            Rp {{ number_format(abs(($line['debit'] ?? 0) - ($line['credit'] ?? 0)), 0, ',', '.') }}
+                                                            Rp {{ number_format(($line['debit'] ?? 0) - ($line['credit'] ?? 0), 0, ',', '.') }}
                                                         </span>
                                                     </div>
                                                 @endforeach

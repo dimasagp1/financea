@@ -317,7 +317,7 @@
 
                                                     $description = $odooData['name'] ?? '-';
                                                     $reference = $odooData['ref'] ?? null;
-                                                    $amount = abs((float) (($odooData['debit'] ?? 0) - ($odooData['credit'] ?? 0)));
+                                                    $amount = (float) (($odooData['debit'] ?? 0) - ($odooData['credit'] ?? 0));
 
                                                     // Check per-transaction assignment (for multi-mapped COAs)
                                                     $txMapping = $txMappings[$odooData['id']] ?? null;

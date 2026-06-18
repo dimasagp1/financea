@@ -158,7 +158,6 @@ class OdooSyncService
             }
 
             $amount = (float) (($row['debit'] ?? 0) - ($row['credit'] ?? 0));
-            $amount = abs($amount);
             $qty    = (float) ($row['quantity'] ?? 1);
             $qty    = $qty > 0 ? $qty : 1;
 
@@ -631,7 +630,7 @@ class OdooSyncService
                 return null;
             }
 
-            $amount = abs((float) (($row['debit'] ?? 0) - ($row['credit'] ?? 0)));
+            $amount = (float) (($row['debit'] ?? 0) - ($row['credit'] ?? 0));
             $qty    = (float) ($row['quantity'] ?? 1);
             $qty    = $qty > 0 ? $qty : 1;
 
@@ -767,7 +766,7 @@ class OdooSyncService
                 continue;
             }
 
-            $amount = abs((float) (($row['debit'] ?? 0) - ($row['credit'] ?? 0)));
+            $amount = (float) (($row['debit'] ?? 0) - ($row['credit'] ?? 0));
             $qty    = (float) ($row['quantity'] ?? 1);
             $qty    = $qty > 0 ? $qty : 1;
 

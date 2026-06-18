@@ -48,7 +48,7 @@
 
     <!-- Filter Card -->
     <div class="bg-white rounded-2xl border border-slate-100 shadow-md shadow-slate-200/50 p-6 mb-6">
-        <form method="GET" action="{{ route('fat.odoo.coa-mapping') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <form method="GET" action="{{ route('fat.odoo.coa-mapping') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div class="md:col-span-2">
                 <label for="search" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Cari Kode / Nama COA</label>
                 <input type="text" name="search" id="search" value="{{ request('search') }}" 
@@ -59,6 +59,44 @@
                 <label for="month" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Bulan & Tahun Realisasi</label>
                 <input type="month" name="month" id="month" value="{{ $month }}" 
                        class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm">
+            </div>
+            <div class="relative" id="coa-prefix-container">
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Awalan COA (Prefix)</label>
+                <button type="button" onclick="toggleCoaPrefixDropdown()" 
+                    class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 text-left focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm flex items-center justify-between">
+                    <span id="coa-prefix-label">Semua Awalan COA</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="coa-prefix-menu" class="hidden absolute left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl z-50 p-3 max-h-60 overflow-y-auto">
+                    <div class="space-y-2">
+                        @php
+                            $selectedPrefixes = request('coa_prefixes', []);
+                            if (!is_array($selectedPrefixes)) {
+                                $selectedPrefixes = [$selectedPrefixes];
+                            }
+                        @endphp
+                        @foreach([
+                            '1' => '1 - Aset / Persediaan',
+                            '2' => '2 - Kewajiban / Hutang',
+                            '3' => '3 - Ekuitas / Modal',
+                            '4' => '4 - Pendapatan',
+                            '5' => '5 - HPP (Harga Pokok Penjualan)',
+                            '6' => '6 - Beban / Biaya Operasional',
+                            '7' => '7 - Pendapatan Lainnya',
+                            '8' => '8 - Beban Lainnya'
+                        ] as $val => $label)
+                            <label class="flex items-center gap-2.5 p-1 rounded hover:bg-slate-50 cursor-pointer text-xs text-slate-700 font-medium">
+                                <input type="checkbox" name="coa_prefixes[]" value="{{ $val }}" 
+                                    @checked(in_array($val, $selectedPrefixes))
+                                    class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 coa-prefix-checkbox"
+                                    onchange="updateCoaPrefixLabel()">
+                                <span>{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
             </div>
             <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2 mb-2">
@@ -71,7 +109,7 @@
                             class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800 focus:outline-none transition-all shadow-sm">
                         Filter
                     </button>
-                    @if(request()->anyFilled(['search', 'month']) || !$showOnlyWithTransactions)
+                    @if(request()->anyFilled(['search', 'month', 'coa_prefixes']) || !$showOnlyWithTransactions)
                         <a href="{{ route('fat.odoo.coa-mapping') }}" 
                            class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition-all shadow-sm">
                             Reset
@@ -589,6 +627,40 @@
                 })
                 .catch(() => alert('Terjadi kesalahan jaringan.'));
             }
+
+            // Custom COA Prefix Multi-Select Dropdown
+            window.toggleCoaPrefixDropdown = function() {
+                const menu = document.getElementById('coa-prefix-menu');
+                if (menu) {
+                    menu.classList.toggle('hidden');
+                }
+            };
+
+            window.updateCoaPrefixLabel = function() {
+                const checkboxes = document.querySelectorAll('.coa-prefix-checkbox:checked');
+                const label = document.getElementById('coa-prefix-label');
+                if (!label) return;
+
+                if (checkboxes.length === 0) {
+                    label.textContent = 'Semua Awalan COA';
+                } else if (checkboxes.length === 1) {
+                    label.textContent = checkboxes[0].parentElement.querySelector('span').textContent;
+                } else {
+                    label.textContent = checkboxes.length + ' Awalan Terpilih';
+                }
+            };
+
+            document.addEventListener('click', function(e) {
+                const container = document.getElementById('coa-prefix-container');
+                const menu = document.getElementById('coa-prefix-menu');
+                if (container && !container.contains(e.target) && menu) {
+                    menu.classList.add('hidden');
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function() {
+                updateCoaPrefixLabel();
+            });
         </script>
     @endpush
 @endsection

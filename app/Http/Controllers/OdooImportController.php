@@ -301,6 +301,20 @@ class OdooImportController extends Controller
             });
         }
 
+        // Filter by COA prefixes if coa_prefixes array is filled
+        if ($request->filled('coa_prefixes')) {
+            $prefixes = (array) $request->input('coa_prefixes');
+            $odooCoas = array_filter($odooCoas, function ($coa) use ($prefixes) {
+                $code = trim((string) ($coa['code'] ?? ''));
+                foreach ($prefixes as $prefix) {
+                    if (str_starts_with($code, $prefix)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+
         // Sort: Sort by transaction count and amount descending, so active COAs appear first
         usort($odooCoas, function ($a, $b) {
             if ($a['transaction_count'] !== $b['transaction_count']) {

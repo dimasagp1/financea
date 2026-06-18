@@ -77,7 +77,7 @@
     <!-- Filters Card -->
     <div class="bg-white rounded-2xl border border-slate-100 shadow-md shadow-slate-200/50 p-6 mb-8">
         <form method="GET" action="{{ route('fat.odoo.croscheck') }}"
-            class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
                 <label for="search" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Cari
                     Deskripsi / Ref / COA</label>
@@ -103,6 +103,21 @@
                 <input type="month" name="month" id="month" value="{{ $month }}"
                     class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm">
             </div>
+            <div>
+                <label for="coa_prefix" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Awalan COA (Prefix)</label>
+                <select name="coa_prefix" id="coa_prefix"
+                    class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm">
+                    <option value="">Semua Awalan COA</option>
+                    <option value="1" @selected(request('coa_prefix') == '1')>1 - Aset / Persediaan</option>
+                    <option value="2" @selected(request('coa_prefix') == '2')>2 - Kewajiban / Hutang</option>
+                    <option value="3" @selected(request('coa_prefix') == '3')>3 - Ekuitas / Modal</option>
+                    <option value="4" @selected(request('coa_prefix') == '4')>4 - Pendapatan</option>
+                    <option value="5" @selected(request('coa_prefix') == '5')>5 - HPP (Harga Pokok Penjualan)</option>
+                    <option value="6" @selected(request('coa_prefix') == '6')>6 - Beban / Biaya Operasional</option>
+                    <option value="7" @selected(request('coa_prefix') == '7')>7 - Pendapatan Lainnya</option>
+                    <option value="8" @selected(request('coa_prefix') == '8')>8 - Beban Lainnya</option>
+                </select>
+            </div>
             <div class="flex gap-2">
                 <button type="submit"
                     class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800 focus:outline-none transition-all shadow-sm">
@@ -113,7 +128,7 @@
                     </svg>
                     Filter
                 </button>
-                @if(request()->anyFilled(['search', 'department_id', 'month']))
+                @if(request()->anyFilled(['search', 'department_id', 'month', 'coa_prefix']))
                     <a href="{{ route('fat.odoo.croscheck') }}"
                         class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition-all shadow-sm">
                         Reset

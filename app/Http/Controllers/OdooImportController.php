@@ -118,6 +118,20 @@ class OdooImportController extends Controller
             });
         }
 
+        // Filter by COA prefix if coa_prefix is filled
+        if ($request->filled('coa_prefix')) {
+            $prefix = $request->input('coa_prefix');
+            $rawExpenses = array_filter($rawExpenses, function ($item) use ($prefix) {
+                if (isset($item['account_id'])) {
+                    $displayName = is_array($item['account_id']) ? trim((string)$item['account_id'][1]) : trim((string)$item['account_id']);
+                    if (preg_match('/^[a-zA-Z0-9]+/', $displayName, $matches)) {
+                        return str_starts_with($matches[0], $prefix);
+                    }
+                }
+                return false;
+            });
+        }
+
         // Group raw expenses by Odoo COA Account
         $groupedExpenses = [];
         foreach ($rawExpenses as $item) {

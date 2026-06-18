@@ -429,6 +429,7 @@
                         odoo_account_name: tr.dataset.coaName,
                         department_id:     deptId,
                         budget_category_id: catId,
+                        month:             document.getElementById('month').value,
                     })
                 })
                 .then(r => r.json())
@@ -446,7 +447,10 @@
                 fetch(REMOVE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-                    body: JSON.stringify({ target_id: targetId })
+                    body: JSON.stringify({ 
+                        target_id: targetId,
+                        month:     document.getElementById('month').value,
+                    })
                 })
                 .then(r => r.json())
                 .then(data => {

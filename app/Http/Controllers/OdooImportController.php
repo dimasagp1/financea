@@ -379,6 +379,7 @@ class OdooImportController extends Controller
             'odoo_account_name' => 'required|string',
             'department_id'     => 'required|exists:departments,id',
             'budget_category_id'=> 'nullable|exists:budget_categories,id',
+            'month'             => 'nullable|string',
         ]);
 
         // Upsert the header mapping
@@ -398,6 +399,18 @@ class OdooImportController extends Controller
             );
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Target sudah ada atau terjadi kesalahan.']);
+        }
+
+        // Trigger auto-sync for the selected month to fetch transactions for this new mapping immediately
+        if ($request->filled('month')) {
+            $month = $request->input('month');
+            $dateFrom = "{$month}-01";
+            $dateTo = date('Y-m-t', strtotime($dateFrom));
+            try {
+                $this->odooSyncService->syncExpenses(null, $dateFrom, $dateTo);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Auto-sync failed on mapping target addition: ' . $e->getMessage());
+            }
         }
 
         $targets = $mapping->targets()->with('department', 'budgetCategory')->get();
@@ -421,9 +434,36 @@ class OdooImportController extends Controller
     {
         $request->validate([
             'target_id' => 'required|exists:odoo_coa_mapping_targets,id',
+            'month'     => 'nullable|string',
         ]);
 
-        \App\Models\OdooCoaMappingTarget::findOrFail($request->input('target_id'))->delete();
+        $target = \App\Models\OdooCoaMappingTarget::with('mapping')->findOrFail($request->input('target_id'));
+        $mapping = $target->mapping;
+
+        // Delete any local expenses matching this target's department, category, and COA
+        if ($mapping) {
+            \App\Models\Expense::where('department_id', $target->department_id)
+                ->where('budget_category_id', $target->budget_category_id)
+                ->where(function($q) use ($mapping) {
+                    $q->whereJsonContains('odoo_data->account_id', (int) $mapping->odoo_account_id)
+                      ->orWhereJsonContains('odoo_data->account_id', (string) $mapping->odoo_account_id);
+                })
+                ->delete();
+        }
+
+        $target->delete();
+
+        // Trigger sync for the selected month to refresh database state
+        if ($request->filled('month')) {
+            $month = $request->input('month');
+            $dateFrom = "{$month}-01";
+            $dateTo = date('Y-m-t', strtotime($dateFrom));
+            try {
+                $this->odooSyncService->syncExpenses(null, $dateFrom, $dateTo);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Auto-sync failed on mapping target removal: ' . $e->getMessage());
+            }
+        }
 
         return response()->json(['success' => true]);
     }

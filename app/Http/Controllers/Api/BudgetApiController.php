@@ -468,4 +468,68 @@ class BudgetApiController extends Controller
             'data' => $departments
         ]);
     }
+
+    public function stagings(Request $request)
+    {
+        $query = \Illuminate\Support\Facades\DB::table('expense_stagings as es')
+            ->leftJoin('departments as d', 'es.department_id', '=', 'd.id')
+            ->leftJoin('budget_categories as bc', 'es.budget_category_id', '=', 'bc.id')
+            ->select(
+                'es.id',
+                'es.reference',
+                'es.date',
+                'es.description',
+                'es.qty',
+                'es.amount',
+                'es.status',
+                'es.checked_at',
+                'es.created_at',
+                'd.name as department_name',
+                'bc.name as category_name',
+                'bc.code as category_code'
+            );
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('es.reference', 'like', "%{$search}%")
+                  ->orWhere('es.description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('department')) {
+            $query->where('d.name', 'like', '%' . $request->input('department') . '%');
+        }
+
+        if ($request->filled('status')) {
+            $query->where('es.status', $request->input('status'));
+        }
+
+        $query->orderByRaw("FIELD(es.status, 'pending', 'bon', 'ignored') ASC")
+              ->orderBy('es.date', 'desc');
+
+        $stagings = $query->paginate(20);
+
+        $summary = \Illuminate\Support\Facades\DB::table('expense_stagings')
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                SUM(CASE WHEN status = 'bon' THEN 1 ELSE 0 END) as bon_count,
+                SUM(CASE WHEN status = 'ignored' THEN 1 ELSE 0 END) as ignored_count,
+                SUM(CASE WHEN status IN ('pending','bon') THEN amount ELSE 0 END) as total_amount
+            ")->first();
+
+        $departments = \Illuminate\Support\Facades\DB::table('departments')
+            ->orderBy('name')
+            ->pluck('name');
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'stagings' => $stagings,
+                'summary' => $summary,
+                'departments' => $departments
+            ]
+        ]);
+    }
 }

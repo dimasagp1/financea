@@ -360,20 +360,56 @@
 
                                 {{-- Add Target Form --}}
                                 <div class="add-target-form flex flex-wrap gap-2 items-end">
-                                    <select class="dept-select rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
-                                            style="min-width:180px">
-                                        <option value="">-- Pilih Dept --</option>
-                                        @foreach($departments as $dept)
-                                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <select class="cat-select rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm"
-                                            style="min-width:220px" disabled>
-                                        <option value="">-- Pilih Kategori --</option>
-                                    </select>
+                                    {{-- Custom Searchable Department Select --}}
+                                    <div class="relative custom-search-select dept-select-wrapper" style="min-width:180px">
+                                        <input type="hidden" class="dept-select" value="">
+                                        <div class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all shadow-sm flex items-center justify-between cursor-pointer search-trigger">
+                                            <span class="selected-label truncate">-- Pilih Dept --</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                        <div class="hidden absolute left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-xl z-50 options-list">
+                                            <div class="p-1.5 border-b border-slate-100">
+                                                <input type="text" placeholder="Cari departemen..." class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-indigo-500 search-filter">
+                                            </div>
+                                            <div class="options-items py-1 max-h-48 overflow-y-auto">
+                                                <div class="option-item px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors font-semibold border-b border-slate-50" data-value="">
+                                                    -- Pilih Dept --
+                                                </div>
+                                                @foreach($departments as $dept)
+                                                    <div class="option-item px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors" data-value="{{ $dept->id }}">
+                                                        {{ $dept->name }}
+                                                     </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Custom Searchable Category Select --}}
+                                    <div class="relative custom-search-select cat-select-wrapper" style="min-width:220px">
+                                        <input type="hidden" class="cat-select" value="">
+                                        <div class="w-full rounded-lg border border-slate-300 bg-slate-50 text-slate-400 px-2 py-1.5 text-xs focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all shadow-sm flex items-center justify-between cursor-not-allowed search-trigger" data-disabled="true">
+                                            <span class="selected-label truncate">-- Pilih Kategori --</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </div>
+                                        <div class="hidden absolute left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-xl z-50 options-list">
+                                            <div class="p-1.5 border-b border-slate-100">
+                                                <input type="text" placeholder="Cari kategori..." class="w-full rounded border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-indigo-500 search-filter">
+                                            </div>
+                                            <div class="options-items py-1 max-h-48 overflow-y-auto">
+                                                <div class="option-item px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors font-semibold border-b border-slate-50" data-value="">
+                                                    -- Pilih Kategori --
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <button type="button"
                                             onclick="addTarget(this)"
-                                            class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 text-xs transition shadow-sm">
+                                            class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 text-xs transition shadow-sm shrink-0">
                                         + Tambah
                                     </button>
                                 </div>
@@ -426,23 +462,124 @@
                 if (!e.target.classList.contains('dept-select')) return;
 
                 const wrapper = e.target.closest('.add-target-form');
-                const catSelect = wrapper.querySelector('.cat-select');
+                const catWrapper = wrapper.querySelector('.cat-select-wrapper');
+                const catTrigger = catWrapper.querySelector('.search-trigger');
+                const catInput = catWrapper.querySelector('.cat-select');
+                const catLabel = catWrapper.querySelector('.selected-label');
+                const catItemsContainer = catWrapper.querySelector('.options-items');
+                
                 const deptId = e.target.value;
 
-                catSelect.innerHTML = '<option value="">-- Pilih Kategori --</option>';
+                // Reset category selection
+                catInput.value = '';
+                catLabel.textContent = '-- Pilih Kategori --';
+                
+                // Clear old items (keep default option)
+                catItemsContainer.innerHTML = `
+                    <div class="option-item px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors font-semibold border-b border-slate-50" data-value="">
+                        -- Pilih Kategori --
+                    </div>
+                `;
 
                 if (deptId) {
-                    catSelect.disabled = false;
+                    // Enable category dropdown
+                    catTrigger.classList.remove('bg-slate-50', 'text-slate-400', 'cursor-not-allowed');
+                    catTrigger.classList.add('bg-white', 'text-slate-800', 'cursor-pointer');
+                    catTrigger.removeAttribute('data-disabled');
+                    
                     const cats = categoriesByDept[deptId] || [];
                     cats.forEach(cat => {
-                        const opt = document.createElement('option');
-                        opt.value = cat.id;
-                        opt.textContent = `[${cat.code}] ${cat.name}`;
-                        catSelect.appendChild(opt);
+                        const item = document.createElement('div');
+                        item.className = 'option-item px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors';
+                        item.dataset.value = cat.id;
+                        item.textContent = `[${cat.code}] ${cat.name}`;
+                        catItemsContainer.appendChild(item);
                     });
                 } else {
-                    catSelect.disabled = true;
+                    // Disable category dropdown
+                    catTrigger.classList.add('bg-slate-50', 'text-slate-400', 'cursor-not-allowed');
+                    catTrigger.classList.remove('bg-white', 'text-slate-800', 'cursor-pointer');
+                    catTrigger.setAttribute('data-disabled', 'true');
                 }
+            });
+
+            // Toggle dropdown open/close on trigger click
+            document.addEventListener('click', function(e) {
+                const trigger = e.target.closest('.search-trigger');
+                if (trigger) {
+                    if (trigger.getAttribute('data-disabled') === 'true') return;
+                    
+                    const container = trigger.closest('.custom-search-select');
+                    const menu = container.querySelector('.options-list');
+                    const filterInput = container.querySelector('.search-filter');
+                    
+                    // Close all other dropdowns first
+                    document.querySelectorAll('.custom-search-select .options-list').forEach(m => {
+                        if (m !== menu) m.classList.add('hidden');
+                    });
+                    
+                    const isClosed = menu.classList.toggle('hidden');
+                    if (!isClosed && filterInput) {
+                        filterInput.value = '';
+                        // Reset visibility of all items
+                        container.querySelectorAll('.option-item').forEach(item => item.classList.remove('hidden'));
+                        setTimeout(() => filterInput.focus(), 50);
+                    }
+                    return;
+                }
+                
+                // Close when clicking outside
+                if (!e.target.closest('.custom-search-select')) {
+                    document.querySelectorAll('.custom-search-select .options-list').forEach(m => {
+                        m.classList.add('hidden');
+                    });
+                }
+            });
+
+            // Handle option selection
+            document.addEventListener('click', function(e) {
+                const optionItem = e.target.closest('.custom-search-select .option-item');
+                if (!optionItem) return;
+                
+                const container = optionItem.closest('.custom-search-select');
+                const input = container.querySelector('input[type="hidden"]');
+                const label = container.querySelector('.selected-label');
+                const menu = container.querySelector('.options-list');
+                
+                const value = optionItem.dataset.value;
+                const text = optionItem.textContent.trim();
+                
+                const oldValue = input.value;
+                input.value = value;
+                label.textContent = text;
+                menu.classList.add('hidden');
+                
+                if (oldValue !== value) {
+                    // Trigger change event programmatically
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+
+            // Filter options on search input typing
+            document.addEventListener('input', function(e) {
+                if (!e.target.classList.contains('search-filter')) return;
+                
+                const searchVal = e.target.value.toLowerCase().trim();
+                const container = e.target.closest('.custom-search-select');
+                const items = container.querySelectorAll('.option-item');
+                
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    const value = item.dataset.value;
+                    // Don't hide the empty option
+                    if (value === "") {
+                        item.classList.remove('hidden');
+                    } else if (text.includes(searchVal)) {
+                        item.classList.remove('hidden');
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
             });
 
             function addTarget(btn) {

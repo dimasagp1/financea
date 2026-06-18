@@ -106,6 +106,67 @@
                 <p class="mt-2 text-xs text-slate-500">API Key ini digunakan oleh aplikasi Procurement untuk mengamankan komunikasi API ke sistem Finance (FAT). Samakan API Key ini di halaman pengaturan Procurement.</p>
             </div>
 
+            <!-- Odoo API Configuration Field -->
+            <div class="border-t border-slate-100 pt-6">
+                <h2 class="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
+                    <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    </span>
+                    Integrasi API Odoo (XML-RPC)
+                </h2>
+                <p class="text-xs text-slate-500 mb-4">Pengaturan koneksi API untuk penarikan data realisasi pengeluaran dari Odoo ERP secara otomatis.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="odoo_url" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">URL Odoo Host</label>
+                        <input type="url" name="odoo_url" id="odoo_url" value="{{ old('odoo_url', $settings['odoo_url']) }}" 
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm" placeholder="https://odoo.yourcompany.com">
+                        @error('odoo_url')
+                            <p class="mt-1 text-xs text-rose-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="odoo_database" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nama Database Odoo</label>
+                        <input type="text" name="odoo_database" id="odoo_database" value="{{ old('odoo_database', $settings['odoo_database']) }}" 
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm" placeholder="odoo_prod_db">
+                        @error('odoo_database')
+                            <p class="mt-1 text-xs text-rose-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="odoo_username" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Username / Email Odoo</label>
+                        <input type="text" name="odoo_username" id="odoo_username" value="{{ old('odoo_username', $settings['odoo_username']) }}" 
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm" placeholder="admin@yourcompany.com">
+                        @error('odoo_username')
+                            <p class="mt-1 text-xs text-rose-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="odoo_password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Password / API Key Odoo</label>
+                        <input type="password" name="odoo_password" id="odoo_password" value="{{ old('odoo_password', $settings['odoo_password']) }}" 
+                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm" placeholder="••••••••••••••••">
+                        @error('odoo_password')
+                            <p class="mt-1 text-xs text-rose-500">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Test Connection Button and Result -->
+                <div class="mt-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <p class="text-xs text-slate-400">Gunakan tombol ini untuk menguji koneksi Odoo dengan kredensial di atas sebelum menyimpan.</p>
+                    <button type="button" id="btn-test-odoo" 
+                            class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition-all shadow-sm shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Test Koneksi Odoo
+                    </button>
+                </div>
+                <div id="odoo-status-container" class="hidden"></div>
+            </div>
+
             <!-- Budget Categories Checklist -->
             <div class="border-t border-slate-100 pt-6">
                 <h2 class="text-lg font-bold text-slate-900 mb-2">Kategori Anggaran yang Diizinkan untuk API</h2>
@@ -179,6 +240,90 @@
                     result += chars.charAt(Math.floor(Math.random() * chars.length));
                 }
                 document.getElementById('procurement_api_key').value = result;
+            });
+        }
+
+        const btnTestOdoo = document.getElementById('btn-test-odoo');
+        const odooStatusContainer = document.getElementById('odoo-status-container');
+        
+        if (btnTestOdoo) {
+            btnTestOdoo.addEventListener('click', async function () {
+                const url = document.getElementById('odoo_url').value;
+                const db = document.getElementById('odoo_database').value;
+                const user = document.getElementById('odoo_username').value;
+                const pass = document.getElementById('odoo_password').value;
+
+                if (!url || !db || !user || !pass) {
+                    alert('Mohon isi semua field koneksi Odoo terlebih dahulu sebelum menguji.');
+                    return;
+                }
+
+                // Show loading state
+                btnTestOdoo.disabled = true;
+                const originalHtml = btnTestOdoo.innerHTML;
+                btnTestOdoo.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-700 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Menghubungkan...
+                `;
+
+                odooStatusContainer.classList.add('hidden');
+                odooStatusContainer.innerHTML = '';
+
+                try {
+                    const response = await fetch("{{ route('fat.settings.test-odoo') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            odoo_url: url,
+                            odoo_database: db,
+                            odoo_username: user,
+                            odoo_password: pass
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        odooStatusContainer.className = "mt-4 p-4 rounded-xl border border-emerald-100 bg-emerald-50 text-sm text-emerald-800 flex items-start gap-2.5 shadow-sm";
+                        odooStatusContainer.innerHTML = `
+                            <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs shrink-0">✓</span>
+                            <div>
+                                <p class="font-bold">Koneksi Berhasil!</p>
+                                <p class="text-xs text-emerald-600 mt-0.5">${data.message}</p>
+                            </div>
+                        `;
+                    } else {
+                        odooStatusContainer.className = "mt-4 p-4 rounded-xl border border-rose-100 bg-rose-50 text-sm text-rose-800 flex items-start gap-2.5 shadow-sm";
+                        odooStatusContainer.innerHTML = `
+                            <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-100 text-rose-700 font-bold text-xs shrink-0">✗</span>
+                            <div>
+                                <p class="font-bold">Koneksi Gagal</p>
+                                <p class="text-xs text-rose-600 mt-0.5">${data.message}</p>
+                            </div>
+                        `;
+                    }
+                    odooStatusContainer.classList.remove('hidden');
+                } catch (err) {
+                    odooStatusContainer.className = "mt-4 p-4 rounded-xl border border-rose-100 bg-rose-50 text-sm text-rose-800 flex items-start gap-2.5 shadow-sm";
+                    odooStatusContainer.innerHTML = `
+                        <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-100 text-rose-700 font-bold text-xs shrink-0">✗</span>
+                        <div>
+                            <p class="font-bold">Error Jaringan</p>
+                            <p class="text-xs text-rose-600 mt-0.5">Gagal menghubungi server aplikasi.</p>
+                        </div>
+                    `;
+                    odooStatusContainer.classList.remove('hidden');
+                } finally {
+                    btnTestOdoo.disabled = false;
+                    btnTestOdoo.innerHTML = originalHtml;
+                }
             });
         }
     });

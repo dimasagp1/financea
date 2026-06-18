@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
 
             Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
             Route::post('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
+            Route::post('/settings/test-odoo', [\App\Http\Controllers\SettingController::class, 'testOdooConnection'])->name('settings.test-odoo');
 
             Route::get('/users', [FinanceManagementController::class, 'users'])->name('users.index');
             Route::post('/users', [FinanceManagementController::class, 'storeUser'])->name('users.store');
@@ -96,7 +97,29 @@ Route::middleware('auth')->group(function () {
             ->name('departments.override-monthly-budget');
         Route::post('/odoo/sync-expenses', [OdooImportController::class, 'syncExpenses'])
             ->name('odoo.sync-expenses');
+        Route::post('/odoo/sync-month', [OdooImportController::class, 'syncMonth'])
+            ->name('odoo.sync-month');
+        Route::get('/odoo/croscheck', [OdooImportController::class, 'croscheck'])
+            ->name('odoo.croscheck');
+        Route::get('/odoo/coa-mapping', [OdooImportController::class, 'coaMapping'])
+            ->name('odoo.coa-mapping');
+        Route::post('/odoo/coa-mapping/target/add', [OdooImportController::class, 'addCoaMappingTarget'])
+            ->name('odoo.coa-mapping.target.add');
+        Route::post('/odoo/coa-mapping/target/remove', [OdooImportController::class, 'removeCoaMappingTarget'])
+            ->name('odoo.coa-mapping.target.remove');
+        Route::post('/odoo/coa-mapping', [OdooImportController::class, 'storeCoaMapping'])
+            ->name('odoo.store-coa-mapping');
+        Route::post('/odoo/transaction-mapping', [OdooImportController::class, 'storeTransactionMapping'])
+            ->name('odoo.transaction-mapping');
+        Route::post('/odoo/transaction-mapping/remove', [OdooImportController::class, 'removeTransactionMapping'])
+            ->name('odoo.transaction-mapping.remove');
+    });
 
-
+    // Staging Pengeluaran Pagu (semua user yang login bisa akses, aksi dikontrol di controller)
+    Route::prefix('fat')->name('fat.')->group(function () {
+        Route::get('/staging', [\App\Http\Controllers\Fat\StagingController::class, 'index'])->name('staging.index');
+        Route::post('/staging/{staging}/bon', [\App\Http\Controllers\Fat\StagingController::class, 'markAsBon'])->name('staging.bon');
+        Route::post('/staging/{staging}/ignore', [\App\Http\Controllers\Fat\StagingController::class, 'markAsIgnored'])->name('staging.ignore');
+        Route::post('/staging/{staging}/pending', [\App\Http\Controllers\Fat\StagingController::class, 'markAsPending'])->name('staging.pending');
     });
 });

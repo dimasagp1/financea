@@ -313,6 +313,7 @@ function showConfirmModal(message) {
 		document.addEventListener('keydown', onKeydown);
 	});
 }
+window.showConfirmModal = showConfirmModal;
 
 document.addEventListener('DOMContentLoaded', () => {
 	applyAutoDismissFlash();

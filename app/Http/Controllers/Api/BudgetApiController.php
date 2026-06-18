@@ -40,7 +40,16 @@ class BudgetApiController extends Controller
         // Resolusi Department: coba lookup by name dulu, fallback ke ID
         $resolvedDeptId = $validated['department_id'];
         if (!empty($validated['department_name'])) {
-            $dept = Department::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($validated['department_name']) . '%'])->first();
+            $nameLower = strtolower($validated['department_name']);
+            $dept = Department::whereRaw('LOWER(name) LIKE ?', ['%' . $nameLower . '%'])->first();
+            if (!$dept) {
+                $dept = Department::all()->first(function($d) use ($nameLower) {
+                    $dbLower = strtolower($d->name);
+                    return str_contains($nameLower, $dbLower) 
+                        || (str_contains($dbLower, 'human') && str_contains($nameLower, 'human'))
+                        || (str_contains($dbLower, 'finance') && str_contains($nameLower, 'finance'));
+                });
+            }
             if ($dept) {
                 $resolvedDeptId = $dept->id;
             }
@@ -104,7 +113,7 @@ class BudgetApiController extends Controller
             $budgetLimit = $baselinePagu * $ratioFraction;
         }
 
-        // 2. Kalkulasi Penggunaan Saat Ini (Current Usage)
+        // 2. Kalkulasi Penggunaan Saat Ini (Current Usage) - Hanya menggunakan data Realisasi Odoo resmi
         $currentUsage = $category->expenses()
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
@@ -121,7 +130,7 @@ class BudgetApiController extends Controller
             ? 'Anggaran mencukupi.' 
             : 'Batasan anggaran terlampaui. Total pengajuan melebihi sisa anggaran kategori ' . $validated['category_name'] . ' bulan ini.';
 
-        // Cari data expense yang sudah ter-record untuk dicocokkan revisinya
+        // Cari data expense yang sudah ter-record untuk dicocokkan revisinya (dari pengeluaran resmi)
         $recordedExpenseAmount = null;
         if (!empty($validated['reference'])) {
             $expense = Expense::where('reference', $validated['reference'])
@@ -360,7 +369,16 @@ class BudgetApiController extends Controller
         // Resolve department
         $resolvedDeptId = $validated['department_id'];
         if (!empty($validated['department_name'])) {
-            $dept = Department::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($validated['department_name']) . '%'])->first();
+            $nameLower = strtolower($validated['department_name']);
+            $dept = Department::whereRaw('LOWER(name) LIKE ?', ['%' . $nameLower . '%'])->first();
+            if (!$dept) {
+                $dept = Department::all()->first(function($d) use ($nameLower) {
+                    $dbLower = strtolower($d->name);
+                    return str_contains($nameLower, $dbLower) 
+                        || (str_contains($dbLower, 'human') && str_contains($nameLower, 'human'))
+                        || (str_contains($dbLower, 'finance') && str_contains($nameLower, 'finance'));
+                });
+            }
             if ($dept) {
                 $resolvedDeptId = $dept->id;
             }
@@ -373,14 +391,24 @@ class BudgetApiController extends Controller
             ->first();
 
         if (!$category) {
+            // Fallback: search globally within active fiscal year for sharing budget support
+            $category = BudgetCategory::where('name', $validated['category_name'])
+                ->where('fiscal_year_id', $activeYear->id)
+                ->first();
+            if ($category) {
+                $resolvedDeptId = $category->department_id;
+            }
+        }
+
+        if (!$category) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Kategori anggaran (' . $validated['category_name'] . ') tidak ditemukan di departemen ini untuk tahun fiskal aktif.',
             ], 404);
         }
 
-        // Check if exists to prevent duplication
-        $exists = Expense::where('reference', $validated['reference'])
+        // Check if exists to prevent duplication in staging
+        $exists = \App\Models\ExpenseStaging::where('reference', $validated['reference'])
             ->where('budget_category_id', $category->id)
             ->first();
 
@@ -390,16 +418,17 @@ class BudgetApiController extends Controller
                 'qty' => $validated['qty'] ?? 1,
                 'date' => $validated['date'],
                 'description' => $validated['description'] ?? "Procurement PR Realization Update",
+                'status' => $exists->status === 'ignored' ? 'pending' : $exists->status,
             ]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Realisasi anggaran diperbarui.',
+                'message' => 'Realisasi anggaran di staging diperbarui.',
                 'data' => $exists
             ]);
         }
 
-        $expense = Expense::create([
+        $staging = \App\Models\ExpenseStaging::create([
             'department_id'      => $resolvedDeptId,
             'budget_category_id' => $category->id,
             'qty'                => $validated['qty'] ?? 1,
@@ -407,12 +436,13 @@ class BudgetApiController extends Controller
             'date'               => $validated['date'],
             'description'        => $validated['description'] ?? "Procurement PR Realization",
             'reference'          => $validated['reference'],
+            'status'             => 'pending',
         ]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Realisasi anggaran berhasil dicatat.',
-            'data' => $expense
+            'message' => 'Realisasi anggaran berhasil dicatat di staging.',
+            'data' => $staging
         ]);
     }
 
@@ -422,11 +452,11 @@ class BudgetApiController extends Controller
             'reference' => 'required|string',
         ]);
 
-        Expense::where('reference', $validated['reference'])->delete();
+        \App\Models\ExpenseStaging::where('reference', $validated['reference'])->delete();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Realisasi anggaran untuk referensi tersebut telah dihapus.'
+            'message' => 'Realisasi anggaran di staging untuk referensi tersebut telah dihapus.'
         ]);
     }
 

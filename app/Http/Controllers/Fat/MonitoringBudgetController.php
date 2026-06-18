@@ -351,8 +351,16 @@ class MonitoringBudgetController extends Controller
             : 0;
         $category->calculated_budget = $monthlyBudgetAmount * $ratioFraction;
 
-        // Load filtered expenses
+        // Load filtered expenses (official)
         $expenses = $category->expenses()
+            ->with('department')
+            ->whereYear('date', $currentDate->year)
+            ->whereMonth('date', $currentDate->month)
+            ->latest('date')
+            ->get();
+
+        // Load filtered staging expenses
+        $stagingExpenses = \App\Models\ExpenseStaging::where('budget_category_id', $category->id)
             ->whereYear('date', $currentDate->year)
             ->whereMonth('date', $currentDate->month)
             ->latest('date')
@@ -379,6 +387,7 @@ class MonitoringBudgetController extends Controller
         return view('fat.monitoring.show', [
             'category' => $category,
             'expenses' => $expenses,
+            'stagingExpenses' => $stagingExpenses,
             'activeFiscalYear' => $activeYear,
             'is_fat_or_superadmin' => ($user->isFAT() || $user->isSuperAdmin()),
             'currentMonthName' => $monthName,
@@ -390,6 +399,10 @@ class MonitoringBudgetController extends Controller
     public function updateExpense(Request $request, Expense $expense)
     {
         $this->checkDepartmentAccess($expense->department_id);
+
+        if ($expense->odoo_move_line_id) {
+            return back()->with('error', 'Transaksi yang disinkronkan dari Odoo tidak dapat diedit langsung.');
+        }
 
         $validated = $request->validate([
             'date' => 'required|date',
@@ -405,6 +418,10 @@ class MonitoringBudgetController extends Controller
     public function destroyExpense(Expense $expense)
     {
         $this->checkDepartmentAccess($expense->department_id);
+
+        if ($expense->odoo_move_line_id) {
+            return back()->with('error', 'Transaksi yang disinkronkan dari Odoo tidak dapat dihapus langsung.');
+        }
 
         $expense->delete();
 

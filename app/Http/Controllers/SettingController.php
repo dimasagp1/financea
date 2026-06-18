@@ -18,6 +18,10 @@ class SettingController extends Controller
             'app_logo' => Setting::get('app_logo'),
             'app_favicon' => Setting::get('app_favicon'),
             'procurement_api_key' => Setting::get('procurement_api_key', env('PROCUREMENT_API_KEY')),
+            'odoo_url' => Setting::get('odoo_url', config('services.odoo.url')),
+            'odoo_database' => Setting::get('odoo_database', config('services.odoo.database')),
+            'odoo_username' => Setting::get('odoo_username', config('services.odoo.username')),
+            'odoo_password' => Setting::get('odoo_password', config('services.odoo.password')),
         ];
 
         // Fetch active fiscal year
@@ -40,12 +44,20 @@ class SettingController extends Controller
             'app_logo' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
             'app_favicon' => 'nullable|image|mimes:ico,png,svg|max:1024',
             'procurement_api_key' => 'nullable|string|max:255',
+            'odoo_url' => 'nullable|url|max:255',
+            'odoo_database' => 'nullable|string|max:255',
+            'odoo_username' => 'nullable|string|max:255',
+            'odoo_password' => 'nullable|string|max:255',
             'active_categories' => 'nullable|array',
             'active_categories.*' => 'integer',
         ]);
 
         Setting::set('app_name', $request->app_name);
         Setting::set('procurement_api_key', $request->procurement_api_key);
+        Setting::set('odoo_url', $request->odoo_url);
+        Setting::set('odoo_database', $request->odoo_database);
+        Setting::set('odoo_username', $request->odoo_username);
+        Setting::set('odoo_password', $request->odoo_password);
 
         if ($request->hasFile('app_logo')) {
             $oldLogo = Setting::get('app_logo');
@@ -81,5 +93,25 @@ class SettingController extends Controller
         }
 
         return redirect()->route('fat.settings.index')->with('success', 'Pengaturan aplikasi berhasil disimpan.');
+    }
+
+    public function testOdooConnection(Request $request)
+    {
+        $request->validate([
+            'odoo_url' => 'required|url|max:255',
+            'odoo_database' => 'required|string|max:255',
+            'odoo_username' => 'required|string|max:255',
+            'odoo_password' => 'required|string|max:255',
+        ]);
+
+        $syncService = app(\App\Services\OdooSyncService::class);
+        $result = $syncService->testConnection(
+            $request->odoo_url,
+            $request->odoo_database,
+            $request->odoo_username,
+            $request->odoo_password
+        );
+
+        return response()->json($result);
     }
 }

@@ -93,6 +93,75 @@
                 </span>
             </div>
         </div>
+        @if($stagingExpenses->isNotEmpty())
+        {{-- Staging Expenses List --}}
+        <div class="rounded-xl border border-amber-200 bg-white shadow-sm overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-amber-100 bg-amber-50/30 flex items-center justify-between">
+                <h3 class="font-semibold text-amber-900 flex items-center gap-2">
+                    <span>📦</span>
+                    <span>Staging Pengeluaran Pagu (Procurement)</span>
+                </h3>
+                <span class="text-xs text-amber-700 bg-white px-2 py-1 rounded border border-amber-200 font-bold">
+                    {{ $stagingExpenses->count() }} Staging
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-amber-800 uppercase bg-amber-50/40 border-b border-amber-100">
+                        <tr>
+                            <th class="px-6 py-3">Tanggal</th>
+                            <th class="px-6 py-3">Referensi PR</th>
+                            <th class="px-6 py-3">Deskripsi</th>
+                            <th class="px-6 py-3 text-center">Status Staging</th>
+                            <th class="px-6 py-3 text-right">Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-amber-50">
+                        @foreach($stagingExpenses as $staging)
+                            @php
+                                $isSynced = $expenses->contains(function ($e) use ($staging) {
+                                    return $e->reference === $staging->reference;
+                                });
+                                if ($isSynced) {
+                                    $badge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                    $label = 'Sudah Sinkron Odoo';
+                                } elseif ($staging->status === 'bon') {
+                                    $badge = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                                    $label = 'Reported Odoo (Menunggu Sync)';
+                                } elseif ($staging->status === 'ignored') {
+                                    $badge = 'bg-slate-50 text-slate-500 border-slate-200';
+                                    $label = 'Diabaikan';
+                                } else {
+                                    $badge = 'bg-amber-50 text-amber-700 border-amber-200';
+                                    $label = 'Pending (Belum Reported Odoo)';
+                                }
+                            @endphp
+                            <tr class="hover:bg-amber-50/20 transition-colors">
+                                <td class="px-6 py-4 text-slate-600 whitespace-nowrap">
+                                    {{ $staging->date->format('d M Y') }}
+                                </td>
+                                <td class="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">
+                                    {{ $staging->reference }}
+                                </td>
+                                <td class="px-6 py-4 text-slate-800">
+                                    {{ $staging->description }}
+                                </td>
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border {{ $badge }}">
+                                        {{ $label }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right font-mono font-bold text-slate-900">
+                                    Rp {{ number_format($staging->amount, 0, ',', '.') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
 
         {{-- Expenses List --}}
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -122,7 +191,27 @@
                                     {{ \Carbon\Carbon::parse($expense->date)->format('d M Y') }}
                                 </td>
                                 <td class="px-6 py-4 text-slate-800 font-medium">
-                                    {{ $expense->description }}
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-2">
+                                            <span>{{ $expense->description }}</span>
+                                            @if($expense->odoo_move_line_id)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                    Odoo Synced
+                                                </span>
+                                            @endif
+                                        </div>
+                                        @if($expense->odoo_move_line_id)
+                                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-1.5 font-normal">
+                                                @if($expense->reference)
+                                                    <span><strong class="text-slate-500">Ref:</strong> {{ $expense->reference }}</span>
+                                                @endif
+                                                @if(isset($expense->odoo_data['account_id']) && is_array($expense->odoo_data['account_id']))
+                                                    <span><strong class="text-slate-500">COA Odoo:</strong> {{ $expense->odoo_data['account_id'][1] }}</span>
+                                                @endif
+                                                <span><strong class="text-slate-500">Cost Center:</strong> {{ $expense->department->name }} ({{ $expense->department->code }})</span>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-right font-mono text-slate-700">
                                     Rp {{ number_format($expense->amount, 0, ',', '.') }}
@@ -130,21 +219,27 @@
                                 @if($is_fat_or_superadmin)
                                     <td class="px-6 py-4 text-center">
                                         <div class="flex items-center justify-center gap-2">
-                                            <button type="button"
-                                                onclick="openEditExpense({{ $expense->id }}, '{{ $expense->date }}', {{ $expense->amount }}, '{{ addslashes($expense->description) }}')"
-                                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit">
-                                                ✏️
-                                            </button>
-                                            <form action="{{ route('monitoring.expenses.destroy', $expense->id) }}" method="POST"
-                                                onsubmit="return confirm('Hapus pengeluaran ini?')" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"
-                                                    title="Hapus">
-                                                    🗑️
+                                            @if($expense->odoo_move_line_id)
+                                                <span class="inline-flex items-center justify-center p-1.5 text-slate-400 bg-slate-50 border border-slate-100 rounded-lg cursor-not-allowed" title="Terkunci (Sinkron Odoo)">
+                                                    🔒 <span class="text-[10px] ml-1 font-bold uppercase text-slate-400">Locked</span>
+                                                </span>
+                                            @else
+                                                <button type="button"
+                                                    onclick="openEditExpense({{ $expense->id }}, '{{ $expense->date }}', {{ $expense->amount }}, '{{ addslashes($expense->description) }}')"
+                                                    class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit">
+                                                    ✏️
                                                 </button>
-                                            </form>
+                                                <form action="{{ route('monitoring.expenses.destroy', $expense->id) }}" method="POST"
+                                                    onsubmit="return confirm('Hapus pengeluaran ini?')" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                                                        title="Hapus">
+                                                        🗑️
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 @endif
@@ -176,8 +271,7 @@
                 <button onclick="document.getElementById('modal-add-expense-show').classList.add('hidden')"
                     class="text-emerald-100 hover:text-white text-xl">✕</button>
             </div>
-            <form id="form-add-expense-show" action="{{ route('monitoring.expenses.store') }}" method="POST" class="p-6 space-y-4"
-                onsubmit="return checkOverBudget(this)">
+            <form id="form-add-expense-show" action="{{ route('monitoring.expenses.store') }}" method="POST" class="p-6 space-y-4">
                 @csrf
                 <input type="hidden" name="budget_category_id" value="{{ $category->id }}">
 
@@ -299,14 +393,30 @@
                 });
             }
 
-            function checkOverBudget(form) {
-                const amount = parseFloat(document.getElementById('add-expense-amount').value) || 0;
-                if (amount > remainingBudget && remainingBudget >= 0) {
-                    return confirm('Nominal melebihi sisa anggaran kategori (Rp ' +
-                        remainingBudget.toLocaleString('id-ID') +
-                        '). Tetap simpan?');
-                }
-                return true;
+            const addExpenseForm = document.getElementById('form-add-expense-show');
+            if (addExpenseForm) {
+                addExpenseForm.addEventListener('submit', async function(e) {
+                    if (this.dataset.overbudgetBypassed === '1') {
+                        delete this.dataset.overbudgetBypassed;
+                        return; // proceed with submit
+                    }
+
+                    const amount = parseFloat(document.getElementById('add-expense-amount').value) || 0;
+                    if (amount > remainingBudget && remainingBudget >= 0) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+
+                        const message = 'Nominal melebihi sisa anggaran kategori (Rp ' +
+                            remainingBudget.toLocaleString('id-ID') +
+                            '). Tetap simpan?';
+
+                        const accepted = await window.showConfirmModal(message);
+                        if (accepted) {
+                            this.dataset.overbudgetBypassed = '1';
+                            this.submit();
+                        }
+                    }
+                });
             }
         </script>
         <style>

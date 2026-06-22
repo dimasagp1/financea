@@ -514,20 +514,16 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            // Show a checkmark badge next to the dropdown
-                            let badge = selectEl.parentElement.querySelector('.tx-ok-badge');
-                            if (!badge) {
-                                badge = document.createElement('span');
-                                badge.className = 'tx-ok-badge inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-100 text-violet-700';
-                                selectEl.parentElement.appendChild(badge);
-                            }
-                            badge.textContent = '✓ ' + (data.dept_name || '') + ' → ' + (data.cat_name || '');
+                            window.location.reload();
                         } else {
                             alert('Gagal menyimpan assignment.');
+                            selectEl.disabled = false;
                         }
                     })
-                    .catch(() => alert('Terjadi kesalahan jaringan.'))
-                    .finally(() => { selectEl.disabled = false; });
+                    .catch(() => {
+                        alert('Terjadi kesalahan jaringan.');
+                        selectEl.disabled = false;
+                    });
             }
 
             // Custom COA Prefix Multi-Select Dropdown

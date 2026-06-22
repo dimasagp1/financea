@@ -6,18 +6,33 @@
             <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Pemetaan COA Odoo</h2>
             <p class="text-slate-500 mt-1">Petakan Akun COA Odoo ke Departemen dan Kategori Anggaran FAT secara manual. Satu COA bisa dipetakan ke banyak kategori.</p>
         </div>
-        {{-- Sync button for current selected month --}}
-        <form method="POST" action="{{ route('fat.odoo.sync-month') }}" class="flex-shrink-0">
-            @csrf
-            <input type="hidden" name="month" value="{{ $month }}">
-            <button type="submit"
-                    class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 text-sm shadow-md shadow-indigo-200 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Sinkronkan Data {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}
-            </button>
-        </form>
+        <div class="flex items-center gap-3 flex-shrink-0">
+            {{-- Unsync button for current selected month --}}
+            <form method="POST" action="{{ route('fat.odoo.unsync-month') }}" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan sinkronisasi dan mengosongkan data transaksi bulan {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}? Semua realisasi transaksi Odoo di bulan ini akan dihapus dari FAT.')" class="flex-shrink-0">
+                @csrf
+                <input type="hidden" name="month" value="{{ $month }}">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold px-6 py-2.5 text-sm shadow-sm transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Kosongkan Data {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}
+                </button>
+            </form>
+
+            {{-- Sync button for current selected month --}}
+            <form method="POST" action="{{ route('fat.odoo.sync-month') }}" class="flex-shrink-0">
+                @csrf
+                <input type="hidden" name="month" value="{{ $month }}">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 text-sm shadow-md shadow-indigo-200 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Sinkronkan Data {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}
+                </button>
+            </form>
+        </div>
     </div>
 
     {{-- Flash Messages --}}

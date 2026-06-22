@@ -64,6 +64,55 @@ class OdooImportController extends Controller
             ->with('success', $message);
     }
 
+    /**
+     * Unsync Odoo expenses for a specific month (delete local synced expenses & manual transaction mappings).
+     */
+    public function unsyncMonth(Request $request)
+    {
+        $request->validate([
+            'month' => ['required', 'regex:/^\d{4}-\d{2}$/'],
+        ]);
+
+        $month = $request->input('month');
+        $dateFrom = "{$month}-01";
+        $dateTo = date('Y-m-t', strtotime($dateFrom));
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($dateFrom, $dateTo) {
+                // Find expenses in the date range that were synced
+                $expensesQuery = \App\Models\Expense::where('date', '>=', $dateFrom)
+                    ->where('date', '<=', $dateTo)
+                    ->where(function ($q) {
+                        $q->where('is_synced', true)
+                          ->orWhereNotNull('odoo_move_line_id');
+                    });
+
+                $moveLineIds = $expensesQuery->pluck('odoo_move_line_id')->filter()->toArray();
+
+                if (!empty($moveLineIds)) {
+                    // Delete manual per-transaction assignments/mappings
+                    \App\Models\OdooTransactionMapping::whereIn('odoo_move_line_id', $moveLineIds)->delete();
+                }
+
+                // Delete the actual expenses
+                $expensesQuery->delete();
+            });
+
+            // Clear Odoo raw cache for that month
+            $cacheKey = "odoo_raw_expenses_{$dateFrom}_{$dateTo}_all";
+            \Illuminate\Support\Facades\Cache::forget($cacheKey);
+
+        } catch (\Exception $e) {
+            return redirect()->route('fat.odoo.coa-mapping', ['month' => $month])
+                ->with('error', 'Gagal mengosongkan data sinkronisasi: ' . $e->getMessage());
+        }
+
+        $message = "Sinkronisasi data " . \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') . " berhasil dibatalkan dan dikosongkan.";
+
+        return redirect()->route('fat.odoo.coa-mapping', ['month' => $month])
+            ->with('success', $message);
+    }
+
     public function croscheck(Request $request)
     {
         $departments = Department::orderBy('name')->get();

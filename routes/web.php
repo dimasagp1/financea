@@ -99,6 +99,8 @@ Route::middleware('auth')->group(function () {
             ->name('odoo.sync-expenses');
         Route::post('/odoo/sync-month', [OdooImportController::class, 'syncMonth'])
             ->name('odoo.sync-month');
+        Route::post('/odoo/unsync-month', [OdooImportController::class, 'unsyncMonth'])
+            ->name('odoo.unsync-month');
         Route::get('/odoo/croscheck', [OdooImportController::class, 'croscheck'])
             ->name('odoo.croscheck');
         Route::get('/odoo/coa-mapping', [OdooImportController::class, 'coaMapping'])

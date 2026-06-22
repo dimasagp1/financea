@@ -219,7 +219,9 @@
                                                         @endphp
                                                         <tr class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors">
                                                             <td class="py-2 pr-2">
-                                                                <div class="font-medium text-slate-700 truncate max-w-[120px]" title="{{ $catData['name'] }}">{{ $catData['name'] }}</div>
+                                                                <a href="{{ route('monitoring.categories.show', ['category' => $catData['id'], 'month' => $selectedMonth, 'year' => $selectedYear]) }}" class="font-medium text-slate-700 hover:text-indigo-600 hover:underline truncate max-w-[120px] block" title="{{ $catData['name'] }}">
+                                                                    {{ $catData['name'] }}
+                                                                </a>
                                                                 <div class="text-[9px] text-slate-400 font-mono">{{ $catData['code'] }}</div>
                                                             </td>
                                                             <td class="py-2 px-2 text-right font-mono text-slate-600">
@@ -402,15 +404,18 @@
                 });
 
                 if (legendHolder) {
+                    const selectedMonth = @json($selectedMonth);
+                    const selectedYear = @json($selectedYear);
                     legendHolder.innerHTML = categories.map((category) => {
                         const index = nonZeroCategories.findIndex((row) => row.name === category.name);
                         const color = index >= 0 ? palette[index % palette.length] : '#94A3B8';
                         const share = total > 0 ? ((Number(category.used || 0) / total) * 100) : 0;
+                        const showUrl = `{{ route('monitoring.categories.show', ':id') }}`.replace(':id', category.id) + `?month=${selectedMonth}&year=${selectedYear}`;
                         return `
                             <div class="flex items-center justify-between gap-2 text-xs">
                                 <div class="flex items-center gap-1.5 min-w-0">
                                     <span class="inline-block h-2.5 w-2.5 rounded-full" style="background:${color}"></span>
-                                    <div class="truncate text-slate-600">${category.name ?? '-'}</div>
+                                    <a href="${showUrl}" class="truncate text-slate-600 hover:text-indigo-600 hover:underline font-medium" title="${category.name ?? '-'}">${category.name ?? '-'}</a>
                                 </div>
                                 <div class="font-semibold text-slate-700">${Math.round(share)}%</div>
                             </div>

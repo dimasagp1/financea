@@ -117,6 +117,7 @@ class ManagerDashboardController extends Controller
                             : 0;
 
                         return [
+                            'id' => $category->id,
                             'code' => (string) $category->code,
                             'name' => (string) $category->name,
                             'ratio' => $catRatio,

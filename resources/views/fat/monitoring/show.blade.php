@@ -93,7 +93,39 @@
                 </span>
             </div>
         </div>
-        @if($is_fat_or_superadmin && $stagingExpenses->isNotEmpty())
+        @if(!$is_fat_or_superadmin)
+        {{-- Visualisasi Progress Bar & Alokasi Anggaran --}}
+        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm mb-6">
+            <h3 class="font-semibold text-slate-800 mb-4">Visualisasi Penggunaan Anggaran</h3>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-500 font-medium">Progress Terpakai</span>
+                        <span class="font-semibold {{ $status_color }}">{{ round($category->utilization, 1) }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                        <div class="h-full rounded-full {{ str_replace('text-', 'bg-', $status_color) }}" style="width: {{ min($category->utilization, 100) }}%"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100 text-center">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Target</p>
+                        <p class="text-sm font-bold text-slate-700 mt-1">Rp {{ number_format($category->calculated_budget, 0, ',', '.') }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Terpakai</p>
+                        <p class="text-sm font-bold text-slate-700 mt-1">Rp {{ number_format($category->total_used, 0, ',', '.') }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Sisa</p>
+                        <p class="text-sm font-bold text-slate-700 mt-1">Rp {{ number_format($category->remaining, 0, ',', '.') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        @if($stagingExpenses->isNotEmpty())
         {{-- Staging Expenses List --}}
         <div class="rounded-xl border border-amber-200 bg-white shadow-sm overflow-hidden mb-6">
             <div class="px-6 py-4 border-b border-amber-100 bg-amber-50/30 flex items-center justify-between">
@@ -163,9 +195,8 @@
         </div>
         @endif
 
-        @if($is_fat_or_superadmin)
         {{-- Expenses List --}}
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-6">
             <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800">Daftar Pengeluaran ({{ $currentMonthName }})</h3>
                 <span
@@ -256,37 +287,6 @@
                 </table>
             </div>
         </div>
-        @else
-        {{-- Visualisasi Progress Bar & Alokasi Anggaran --}}
-        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 class="font-semibold text-slate-800 mb-4">Visualisasi Penggunaan Anggaran</h3>
-            <div class="space-y-4">
-                <div>
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-slate-500 font-medium">Progress Terpakai</span>
-                        <span class="font-semibold {{ $status_color }}">{{ round($category->utilization, 1) }}%</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                        <div class="h-full rounded-full {{ str_replace('text-', 'bg-', $status_color) }}" style="width: {{ min($category->utilization, 100) }}%"></div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100 text-center">
-                    <div>
-                        <p class="text-xs text-slate-400 uppercase font-semibold">Target</p>
-                        <p class="text-sm font-bold text-slate-700 mt-1">Rp {{ number_format($category->calculated_budget, 0, ',', '.') }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 uppercase font-semibold">Terpakai</p>
-                        <p class="text-sm font-bold text-slate-700 mt-1">Rp {{ number_format($category->total_used, 0, ',', '.') }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-slate-400 uppercase font-semibold">Sisa</p>
-                        <p class="text-sm font-bold text-slate-700 mt-1">Rp {{ number_format($category->remaining, 0, ',', '.') }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endif
     </div>
 
     {{-- MODAL ADD EXPENSE (from show page) --}}

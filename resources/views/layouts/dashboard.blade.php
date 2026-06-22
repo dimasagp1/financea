@@ -76,17 +76,11 @@
                         Budget</a>
                     <a href="{{ route('fat.forecasts.index') }}"
                         class="{{ $menuBaseClass }} {{ request()->routeIs('fat.forecasts.*') ? $menuActiveClass : $menuInactiveClass }}">Forecast</a>
-                    <a href="{{ route('fat.staging.index') }}"
-                        class="{{ $menuBaseClass }} {{ request()->routeIs('fat.staging.*') ? $menuActiveClass : $menuInactiveClass }}">📦
-                        Staging Pengeluaran Pagu</a>
                 @else
                     @if(auth()->user()?->isManager())
                         <a href="{{ route('manager.dashboard') }}"
                             class="{{ $menuBaseClass }} {{ request()->routeIs('manager.*') ? $menuActiveClass : $menuInactiveClass }}">Dashboard
                             Manager</a>
-                        <a href="{{ route('fat.staging.index') }}"
-                            class="{{ $menuBaseClass }} {{ request()->routeIs('fat.staging.*') ? $menuActiveClass : $menuInactiveClass }}">📦
-                            Staging Pengeluaran Pagu</a>
                     @endif
                     @if(!(auth()->user()?->isFAT() || auth()->user()?->isSuperAdmin() || auth()->user()?->isManager()))
                         <a href="{{ route('dashboard.index') }}"

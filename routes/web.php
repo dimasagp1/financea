@@ -115,10 +115,8 @@ Route::middleware('auth')->group(function () {
             ->name('odoo.transaction-mapping');
         Route::post('/odoo/transaction-mapping/remove', [OdooImportController::class, 'removeTransactionMapping'])
             ->name('odoo.transaction-mapping.remove');
-    });
 
-    // Staging Pengeluaran Pagu (semua user yang login bisa akses, aksi dikontrol di controller)
-    Route::prefix('fat')->name('fat.')->group(function () {
+        // Staging Pengeluaran Pagu (Hanya untuk FAT dan Superadmin)
         Route::get('/staging', [\App\Http\Controllers\Fat\StagingController::class, 'index'])->name('staging.index');
         Route::post('/staging/{staging}/bon', [\App\Http\Controllers\Fat\StagingController::class, 'markAsBon'])->name('staging.bon');
         Route::post('/staging/{staging}/ignore', [\App\Http\Controllers\Fat\StagingController::class, 'markAsIgnored'])->name('staging.ignore');

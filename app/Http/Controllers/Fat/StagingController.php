@@ -20,6 +20,7 @@ class StagingController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorizeMutation();
         $query = ExpenseStaging::with(['department', 'budgetCategory', 'checkedBy']);
 
         // Search reference or description

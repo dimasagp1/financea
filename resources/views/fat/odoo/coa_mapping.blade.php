@@ -8,17 +8,13 @@
         </div>
         <div class="flex items-center gap-3 flex-shrink-0">
             {{-- Unsync button for current selected month --}}
-            <form method="POST" action="{{ route('fat.odoo.unsync-month') }}" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan sinkronisasi dan mengosongkan data transaksi bulan {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}? Semua realisasi transaksi Odoo di bulan ini akan dihapus dari FAT.')" class="flex-shrink-0">
-                @csrf
-                <input type="hidden" name="month" value="{{ $month }}">
-                <button type="submit"
-                        class="inline-flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold px-6 py-2.5 text-sm shadow-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Kosongkan Data {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}
-                </button>
-            </form>
+            <button type="button" onclick="openUnsyncModal()"
+                    class="inline-flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-bold px-6 py-2.5 text-sm shadow-sm transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Kosongkan Data {{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}
+            </button>
 
             {{-- Sync button for current selected month --}}
             <form method="POST" action="{{ route('fat.odoo.sync-month') }}" class="flex-shrink-0">
@@ -469,6 +465,64 @@
         @endif
     </div>
 
+    {{-- MODAL UNSYNC CONFIRMATION --}}
+    <div id="modal-unsync-confirmation" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeUnsyncModal()"></div>
+        <div class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in">
+            <div class="px-6 py-4 border-b border-slate-100 bg-rose-50 flex justify-between items-center text-rose-900">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">⚠️</span>
+                    <h3 class="font-bold text-lg">Konfirmasi Kosongkan Data</h3>
+                </div>
+                <button type="button" onclick="closeUnsyncModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+            </div>
+            
+            <form id="form-unsync-month" method="POST" action="{{ route('fat.odoo.unsync-month') }}" class="p-6 space-y-4">
+                @csrf
+                <input type="hidden" name="month" value="{{ $month }}">
+                
+                <div class="space-y-3">
+                    <p class="text-sm text-slate-700 leading-relaxed">
+                        Anda akan mengosongkan data transaksi sinkronisasi Odoo untuk periode <strong class="text-slate-900">{{ \Carbon\Carbon::createFromFormat('Y-m', $month)->translatedFormat('F Y') }}</strong>.
+                    </p>
+                    
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2 text-xs text-slate-600">
+                        <p class="flex items-start gap-2">
+                            <span class="text-rose-500 shrink-0">•</span>
+                            <span>Semua data realisasi pengeluaran yang ditarik dari Odoo pada periode ini akan dihapus dari FAT.</span>
+                        </p>
+                        <p class="flex items-start gap-2">
+                            <span class="text-rose-500 shrink-0">•</span>
+                            <span>Pemetaan manual transaksi Odoo ke kategori budget pada periode ini juga akan dihapus.</span>
+                        </p>
+                        <p class="flex items-start gap-2">
+                            <span class="text-emerald-600 shrink-0">✓</span>
+                            <span><strong>Info:</strong> Tindakan ini hanya menghapus data lokal di aplikasi FAT, <strong>tidak</strong> akan menghapus data apapun di sistem Odoo.</span>
+                        </p>
+                    </div>
+
+                    <div class="pt-2">
+                        <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" id="unsync-confirm-checkbox" onchange="toggleUnsyncSubmitBtn(this)" class="mt-0.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                            <span class="text-xs font-semibold text-slate-700 leading-normal">
+                                Saya setuju untuk mengosongkan data realisasi lokal FAT pada periode ini secara permanen.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                    <button type="button" onclick="closeUnsyncModal()"
+                        class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50">Batal</button>
+                    <button type="submit" id="unsync-submit-btn" disabled
+                        class="px-5 py-2.5 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-lg shadow-rose-200 transition">
+                        Ya, Kosongkan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     @push('scripts')
         <script>
             const categoriesByDept = @json($categoriesByDept);
@@ -845,6 +899,27 @@
                     menu.classList.add('hidden');
                 }
             });
+
+            window.openUnsyncModal = function() {
+                const modal = document.getElementById('modal-unsync-confirmation');
+                const checkbox = document.getElementById('unsync-confirm-checkbox');
+                const submitBtn = document.getElementById('unsync-submit-btn');
+                if (modal) modal.classList.remove('hidden');
+                if (checkbox) checkbox.checked = false;
+                if (submitBtn) submitBtn.disabled = true;
+            };
+
+            window.closeUnsyncModal = function() {
+                const modal = document.getElementById('modal-unsync-confirmation');
+                if (modal) modal.classList.add('hidden');
+            };
+
+            window.toggleUnsyncSubmitBtn = function(checkbox) {
+                const submitBtn = document.getElementById('unsync-submit-btn');
+                if (submitBtn) {
+                    submitBtn.disabled = !checkbox.checked;
+                }
+            };
 
             document.addEventListener('DOMContentLoaded', function() {
                 updateCoaPrefixLabel();

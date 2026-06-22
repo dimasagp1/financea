@@ -125,7 +125,7 @@
         </div>
         @endif
 
-        @if($stagingExpenses->isNotEmpty())
+        @if(!auth()->user()->isDepartemen() && $stagingExpenses->isNotEmpty())
         {{-- Staging Expenses List --}}
         <div class="rounded-xl border border-amber-200 bg-white shadow-sm overflow-hidden mb-6">
             <div class="px-6 py-4 border-b border-amber-100 bg-amber-50/30 flex items-center justify-between">
@@ -195,6 +195,7 @@
         </div>
         @endif
 
+        @if(!auth()->user()->isDepartemen())
         {{-- Expenses List --}}
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-6">
             <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -287,6 +288,7 @@
                 </table>
             </div>
         </div>
+        @endif
     </div>
 
     {{-- MODAL ADD EXPENSE (from show page) --}}
